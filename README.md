@@ -10,14 +10,17 @@ Processing step for each new game:
 - else, if it is in the index, increase the count and add same game info as above
 
 Plans for the future (v*): more "unsupervised", with dynamic pattern sizes; for instance, for the same current move, it will look at small 4x4 patterns say enclosing the move, but also at 10x10 quarters of the board, 19x10 halves of the board, etc, as well as whole board, in an attempt to identify both local and global patterns.
+
 Multiple passes through the SGF collection may be necessary to reach the proper balance (between number of patterns and value of information from each pattern: too many patterns may spread out too thin (1 game only for instance), not to mention computational problems; too few patterns and then we don't get much useful info out of it).
 
 
 Example usage:
+```
 python gopatterns.py "SOME_DIRECTORY_CONTAINING_ALPHAGO_SGFS" 10 10 10 15 40
+```
 
 Example output:
-
+```
 Number matches: 24
 = = = = = = = = = = =
 = . . . . . . . . . .
@@ -79,3 +82,4 @@ Number matches: 13
 = . . . . . . . . . .
 = . . . . . . . . . .
 [...]
+```
