@@ -13,10 +13,15 @@ Plans for the future (v*): more "unsupervised", with dynamic pattern sizes; for 
 
 Multiple passes through the SGF collection may be necessary to reach the proper balance (between number of patterns and value of information from each pattern: too many patterns may spread out too thin (1 game only for instance), not to mention computational problems; too few patterns and then we don't get much useful info out of it).
 
+Usage:
+
+```
+gopatterns.py <sgf dir> <pattern height> <pattern width> <min_stones> <max_stones> <max_num_moves>
+```
 
 Example usage:
 ```
-python gopatterns.py "SOME_DIRECTORY_CONTAINING_ALPHAGO_SGFS" 10 10 10 15 40
+python gopatterns.py "SOME_DIRECTORY_CONTAINING_ALPHAGO_SELFPLAY_SGFS" 10 10 10 15 40
 ```
 
 Example output:
