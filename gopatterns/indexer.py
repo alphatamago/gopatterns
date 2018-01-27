@@ -48,7 +48,8 @@ class PatternIndex(object):
 
     def __init__(self, pat_dim,
                  min_stones_in_pattern, max_stones_in_pattern,
-                 max_moves):
+                 max_moves,
+                 only_corners):
         self.pat_dim = pat_dim
 
         # Only index patterns if they have at least this number of stones
@@ -60,6 +61,9 @@ class PatternIndex(object):
         # Do not try to find patterns beyone this number of moves in each game,
         # if defined.
         self.max_moves_ = max_moves
+
+        # If true, ignore any pattern that does not include a corner
+        self.only_corners = only_corners
 
         # self.index[pattern_hash(pattern)] = 
         self.index_ = {}
@@ -109,14 +113,14 @@ class PatternIndex(object):
         return len(self.index_)
 
 
-    def get_frequent_patterns(self, n):
+    def get_frequent_patterns(self):
         """
-        Return the top-n most frequent patterns in the index.
+        Return the indexed patterns, most frequent first.
         """
         return [x[1] for x in sorted(
             self.index_.items(),
             key=lambda x:len(x[1].matches),
-            reverse=True)[:n]]
+            reverse=True)]
 
 
     def pattern_transformations_(self, pattern):
@@ -202,7 +206,7 @@ class PatternIndex(object):
 
         # Keep track of whether we have a corner match; if so, we can use this
         # info to avoid non-corner matches
-        has_corner = False
+        already_found_corner_match = False
         
         np_board = np.array(board.board)
         for x in range(self.pat_dim[0]):
@@ -254,7 +258,7 @@ class PatternIndex(object):
                     (edge_right and edge_down) or
                     (edge_down and edge_left) or
                     (edge_left and edge_up)):
-                    has_corner = True
+                    already_found_corner_match = True
 
                 # Attach all adjacent edges
                 if edge_up:
@@ -284,17 +288,20 @@ class PatternIndex(object):
                                          info=pattern_match_info))
 
         for pattern_features in possible_matches:
-            # Since one of the pattern_features has_corner, skip the ones
-            # without corner match
-            if has_corner:
-                if not((pattern_features.edge_up and
-                        pattern_features.edge_right) or
-                    (pattern_features.edge_right and
-                     pattern_features.edge_down) or
-                    (pattern_features.edge_down and
-                     pattern_features.edge_left) or
-                    (pattern_features.edge_left and
-                     pattern_features.edge_up)):
+            # Since one we already_found_corner_match, skip
+            # the ones without corner match
+            has_corner = ((pattern_features.edge_up and
+                           pattern_features.edge_right) or
+                          (pattern_features.edge_right and
+                           pattern_features.edge_down) or
+                          (pattern_features.edge_down and
+                           pattern_features.edge_left) or
+                          (pattern_features.edge_left and
+                           pattern_features.edge_up))
+            if self.only_corners and not has_corner:
+                continue
+            if already_found_corner_match:
+                if not has_corner:
                     continue
             self.add_to_index_(
                 pattern_features.pattern,

@@ -36,6 +36,7 @@ def main(argv):
     min_stones_in_pattern = 0
     max_stones_in_pattern = 0
     max_moves = 0
+    only_corners = False
 
     try:
         pathname = argv[1]
@@ -44,40 +45,50 @@ def main(argv):
         min_stones_in_pattern = int(argv[4])
         max_stones_in_pattern = int(argv[5])    
         max_moves = int(argv[6])
+        only_corners = bool(argv[7])
     except:
         print(description)
         print(usage)
         sys.exit(1)
-        
+
+    output_fname = None
+    if len(argv) == 9:
+        output_fname = argv[8]
+        if os.path.isfile(output_fname):
+            print("File already exisits, specify a new name:", output_fname)
+            sys.exit(1)
+    
     print("pathname:", pathname)
     print("pattern size:", pattern_dim1, "x", pattern_dim2)
     print("min_stones_in_pattern:", min_stones_in_pattern)
     print("max_stones_in_pattern", max_stones_in_pattern)
     print("max_moves per game:", max_moves)
+    print("only_corner:", only_corners)
     
     index = PatternIndex(pat_dim=(pattern_dim1, pattern_dim2),
                          min_stones_in_pattern=min_stones_in_pattern,
                          max_stones_in_pattern=max_stones_in_pattern,
-                         max_moves=max_moves)
+                         max_moves=max_moves,
+                         only_corners=only_corners)
            
     num_games = 0
     matches = []
     for root, dirnames, filenames in os.walk(pathname):
         for filename in fnmatch.filter(filenames, '*.sgf'):
             path = os.path.join(root, filename)
-            if num_games < 3:
-                print("Processing", path)
+            print("Processing", path)
             index.find_patterns_in_game(path)
             num_games += 1
+
+    sorted_patterns = index.get_frequent_patterns()
 
     print ("Number patterns found:", len(index.index_), "number of games:",
            num_games)
     print ("Examples:")
-    num_show = 25
-    sorted_patterns = index.get_frequent_patterns(num_show)
 
-    print("Most popular:")
-    for v in sorted_patterns:
+    num_show = 25
+    print("Most popular", num_show)
+    for v in sorted_patterns[:num_show]:
         print ("Number matches:", len(v.matches)) 
         pretty_print (v.pattern)
 
@@ -85,6 +96,14 @@ def main(argv):
         print()
         print("... skipping", index.num_patterns() - num_show, "patterns")
 
+    if output_fname is not None:
+        sys.stdout = open(output_fname, "w")
+        print ("#patterns :", len(index.index_), "#games :", num_games)
+
+        for v in sorted_patterns:
+            print ("#matches :", len(v.matches)) 
+            pretty_print (v.pattern)
+            print()
 
 if __name__ == '__main__':
     main(sys.argv)
