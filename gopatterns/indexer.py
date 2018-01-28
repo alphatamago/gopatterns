@@ -8,14 +8,7 @@ import numpy as np
 
 from sgfmill import sgf, sgf_moves
 
-EDGE = '='
-BLACK = 'b'
-WHITE = 'w'
-
-# Chars used for swapping colors
-# Must be different than BLACK and WHILTE!
-WHITE_REPL = 'W'
-BLACK_REPL = 'B'
+from gopatterns.common import *
 
 PatternMatchInfo = namedtuple('PatternMatchInfo',
                               ['filename', 'move_num', 'location'])
@@ -127,6 +120,7 @@ class PatternIndex(object):
         """
         Private method.
         Returns all the symmetries of the given pattern.
+        Color swapping is handled separately.
         """
         result = [pattern]
         result.append(np.rot90(result[-1]))
@@ -208,7 +202,7 @@ class PatternIndex(object):
         # info to avoid non-corner matches
         already_found_corner_match = False
         
-        np_board = np.array(board.board)
+        np_board = board_to_np(board.board)
         for x in range(self.pat_dim[0]):
             for y in range(self.pat_dim[1]):
                 # We regard (row, col) as being at location (x, y) in the
@@ -262,18 +256,20 @@ class PatternIndex(object):
 
                 # Attach all adjacent edges
                 if edge_up:
-                    pat = np.vstack((np.array([EDGE] * pat.shape[1]), pat))
+                    pat = np.vstack(( board_to_np([EDGE] * pat.shape[1]),
+                                      pat))
                 if edge_down:
-                    pat = np.vstack((pat, np.array([EDGE] * pat.shape[1])))
+                    pat = np.vstack((pat,
+                                     board_to_np([EDGE] * pat.shape[1])))
                 if edge_left:
                     pat = np.hstack(
-                        (np.array([EDGE] * pat.shape[0]).reshape(
+                        (board_to_np([EDGE] * pat.shape[0]).reshape(
                             (pat.shape[0], 1)),
                          pat))
                 if edge_right:
                     pat = np.hstack(
                         (pat,
-                         np.array([EDGE] * pat.shape[0]).reshape(
+                         board_to_np([EDGE] * pat.shape[0]).reshape(
                              (pat.shape[0], 1))))
 
                 pattern_match_info = PatternMatchInfo(filename=pathname,
@@ -326,28 +322,28 @@ class PatternIndex(object):
         if col - y > 0:
             c = col - y
             for r in range(row - x, row - x + self.pat_dim[0]):
-                if (board[r, c] is not None) and (board[r, c - 1] is not None):
+                if (board[r, c] != EMPTY) and (board[r, c - 1] != EMPTY):
                     # Found outside adjacent, not a good pattern
                     return True
         # Check last pattern column, if not on right-edge
         if (col - y + self.pat_dim[1]) < board.shape[1] - 1:
             c = col - y + self.pat_dim[1]
             for r in range(row - x, row - x + self.pat_dim[0]):
-                if (board[r, c] is not None) and (board[r, c + 1] is not None):
+                if (board[r, c] != EMPTY) and (board[r, c + 1] != EMPTY):
                     # Found outside adjacent, not a good pattern
                     return True
         # Check first pattern row, if not on top-edge
         if row - x > 0:
             r = row - x
             for c in range(col - y, col - y + self.pat_dim[1]):
-                if (board[r, c] is not None) and (board[r - 1, c] is not None):
+                if (board[r, c] != EMPTY) and (board[r - 1, c] != EMPTY):
                     # Found outside adjacent, not a good pattern
                     return True
         # Check last pattern row, if not on bottom-edge
         if row - x + self.pat_dim[0] < board.shape[0] - 1:
             r = row - x + self.pat_dim[0]
             for c in range(col - y, col - y + self.pat_dim[1]):
-                if (board[r, c] is not None) and (board[r + 1, c] is not None):
+                if (board[r, c] != EMPTY) and (board[r + 1, c] != EMPTY):
                     # Found outside adjacent, not a good pattern
                     return True
         return False

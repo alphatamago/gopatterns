@@ -7,6 +7,10 @@ import fnmatch
 import os
 import sys
 
+import numpy as np
+import pandas as pd
+
+from gopatterns.common import *
 from gopatterns.indexer import PatternIndex, BLACK, WHITE
 
 def pretty_print(pattern):
@@ -53,11 +57,13 @@ def main(argv):
 
     output_fname = None
     if len(argv) == 9:
-        output_fname = argv[8]
+        output_fname = argv[8] + ".txt"
         if os.path.isfile(output_fname):
             print("File already exisits, specify a new name:", output_fname)
             sys.exit(1)
-    
+        pd_output_fname = argv[8]
+
+            
     print("pathname:", pathname)
     print("pattern size:", pattern_dim1, "x", pattern_dim2)
     print("min_stones_in_pattern:", min_stones_in_pattern)
@@ -100,10 +106,23 @@ def main(argv):
         sys.stdout = open(output_fname, "w")
         print ("#patterns :", len(index.index_), "#games :", num_games)
 
+        matches = []
+        patterns = []
+        num_matches = []
         for v in sorted_patterns:
+            matches.append(','.join(v.matches))
+            num_matches.append(len(v.matches))
+            patterns.append(np_pattern_to_string(v.pattern))
             print ("#matches :", len(v.matches)) 
             pretty_print (v.pattern)
             print()
+
+        df = pd.DataFrame(data={'pattern' : patterns,
+                                # 'matched_sgf': matches}
+                                'frequency' : num_matches})
+        df.to_csv(path_or_buf = "collection_%s_numgames_%s_numpatterns_%s.csv" %
+                  (pd_output_fname, num_games, len(sorted_patterns)),
+                   index = False)
 
 if __name__ == '__main__':
     main(sys.argv)
