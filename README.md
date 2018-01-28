@@ -16,12 +16,12 @@ Multiple passes through the SGF collection may be necessary to reach the proper 
 Usage:
 
 ```
-python examples/find_frequent_patterns.py <sgf dir> <pattern height> <pattern width> <min_stones> <max_stones> <max_num_moves>
+python examples/find_frequent_patterns.py <sgf dir> <pattern height> <pattern width> <min_stones> <max_stones> <max_num_moves> <only_corner_patterns>
 ```
 
 Example usage:
 ```
-python examples/find_frequent_patterns.py "SOME_DIRECTORY_CONTAINING_ALPHAGO_SGFS" 10 10 10 15 40
+python examples/find_frequent_patterns.py "SOME_DIRECTORY_CONTAINING_ALPHAGO_SGFS" 10 10 10 15 40 True
 ```
 
 Example output:
