@@ -13,6 +13,12 @@ Plans for the future (v*): more "unsupervised", with dynamic pattern sizes; for 
 
 Multiple passes through the SGF collection may be necessary to reach the proper balance (between number of patterns and value of information from each pattern: too many patterns may spread out too thin (1 game only for instance), not to mention computational problems; too few patterns and then we don't get much useful info out of it).
 
+Runing unit-tests:
+
+```
+python -m unittest discover -s tests
+```
+
 Usage:
 
 ```

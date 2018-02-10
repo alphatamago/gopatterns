@@ -70,19 +70,28 @@ class PatternIndex(object):
 
         pathname: path to SGF file
         """
-
+        
         f = open(pathname, "rb")
         sgf_src = f.read()
         f.close()
+
+        sgf_game = None
         try:
             sgf_game = sgf.Sgf_game.from_bytes(sgf_src)
             board, plays = sgf_moves.get_setup_and_moves(sgf_game)
         except Exception as e:
             print("Warning: cannot process game", pathname, ", reason:", e)
-            return
+            return ([], None)
 
+        patterns_found = []
         num_moves = 0
         num_found = 0
+        date = None
+        try:
+            date = get_game_date_from_sgf(sgf_game, pathname)
+        except:
+            # TODO - log this, or add some counter
+            pass
         for colour, move in plays:
             if self.max_moves_ is not None and num_moves > self.max_moves_:
                 break
@@ -92,14 +101,16 @@ class PatternIndex(object):
             num_moves += 1
             try:
                 board.play(row, col, colour)
-                self.extract_board_patterns_after_move_(pathname,
-                                                       num_moves,
-                                                       board,
-                                                       row, col)
+                for pattern in self.extract_board_patterns_after_move_(pathname,
+                                                                       num_moves,
+                                                                       board,
+                                                                       row, col):
+                    patterns_found.append(pattern)
             except ValueError as e:
                 print("Error processing", pathname, "at move:", num_moves, ":",
                       e)
-                return
+                break
+        return (patterns_found, date)
 
 
     def num_patterns(self):
@@ -165,6 +176,7 @@ class PatternIndex(object):
         """
         Private method.
         Adds a pattern to the index.
+        Returns the normalized pattern.
 
         pattern: the actual board pattern to add
         info: a PatternMatchInfo instance
@@ -177,6 +189,7 @@ class PatternIndex(object):
                                       matches=defaultdict(list))
             self.index_[pat_hash] = value
         value.matches[info.filename].append(info)
+        return norm_pat
 
 
     def extract_board_patterns_after_move_(self, pathname, num_moves,
@@ -299,9 +312,10 @@ class PatternIndex(object):
             if already_found_corner_match:
                 if not has_corner:
                     continue
-            self.add_to_index_(
+            normalized_pattern = self.add_to_index_(
                 pattern_features.pattern,
                 pattern_features.info)
+            yield normalized_pattern
 
 
     def check_adjacent_stones_outside_pattern_(self, board, x, y, row, col):
