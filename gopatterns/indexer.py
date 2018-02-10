@@ -64,11 +64,16 @@ class PatternIndex(object):
 
     def find_patterns_in_game(self, pathname):
         """
-        Public method used to add a game to the index.
-        One would normally iterate through a game collection and call this
-        method repeatedly, once for each SGF file.
+        Public method that takes a path to a SGF file, reads the file, finds
+        patterns, adds them to the index and also returns them to the caller.
+
+        One can call this repeatedly to iterate through a game collection and
+        then consult the index to find the most frequent patterns for instance.
 
         pathname: path to SGF file
+        
+        return: pair containing (patterns, date) where patterns is a list of
+        each found pattern (normalized) as a numpy array
         """
         
         f = open(pathname, "rb")
@@ -152,9 +157,13 @@ class PatternIndex(object):
         Normalize pattern for rotations, flips, etc, as well as for color
         swapping.
 
-        pattern: a numpy array
+        original_pattern: a numpy array
 
-        returns: (normalized_pattern_hash, normalized_pattern)
+        returns: (normalized_pattern_hash, normalized_pattern) where
+        normalized_pattern_hash is a string representation (hash) of the
+        pattern, which normalized_pattern is a numpy array of an equivalent,
+        cannonical pattern that is identical to the original_pattern modulo
+        symmetries and/or color swaps.
         """
 
         transforms = self.pattern_transformations_(original_pattern)
@@ -180,6 +189,7 @@ class PatternIndex(object):
 
         pattern: the actual board pattern to add
         info: a PatternMatchInfo instance
+        return: the normalized version of the input pattern (numpy array)
         """
         pat_hash, norm_pat = self.pattern_hash_(pattern)
         try:
@@ -200,6 +210,8 @@ class PatternIndex(object):
         pattern assumming that (row, col) board coordinates are in (x, y) pattern
         coordinates.
         If the pattern won't fully fit on the board this way, move on.
+
+        return: yields each pattern found as a numpy array
         """
         
         # Consider all possible ways in which the current (row, col)

@@ -19,7 +19,9 @@ Runing unit-tests:
 python -m unittest discover -s tests
 ```
 
-Usage:
+One possible use-case is to iterate over a collection of SGF files, and in the
+end consult the index for what are the most frequent patterns. There is an
+example of this in the find_frequent_patterns.py file.
 
 ```
 python examples/find_frequent_patterns.py <sgf dir> <pattern height> <pattern width> <min_stones> <max_stones> <max_num_moves> <only_corner_patterns>
@@ -95,3 +97,11 @@ Number matches: 13
 = . . . . . . . . . .
 [...]
 ```
+
+Another possible usage is to iterate over SGF files in a collection to find
+what patterns were popular in different years. An example of this can be found
+in the find_patterns_in_collection.py script which takes similar arguments like
+find_frequent_patterns.py plus an extra one to be used in the naming of an
+output file - one needs to read the code of these examples anyway if one wants to
+use them, but the purpose of these scripts are just to illustrate how to use the
+indexer.py script which is the actual library.

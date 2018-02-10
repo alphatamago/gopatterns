@@ -2,7 +2,7 @@
 Example program that finds the patterns of given size in a SGS collection, and
 outputs a CSV with the following columns:
 
-pattern sgf_filename year player
+pattern sgf_filename year
 """
 
 import fnmatch
