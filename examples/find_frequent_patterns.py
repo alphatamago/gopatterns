@@ -35,7 +35,7 @@ def main(argv):
         min_stones_in_pattern = int(argv[4])
         max_stones_in_pattern = int(argv[5])    
         max_moves = int(argv[6])
-        only_corners = bool(argv[7])
+        only_corners = (argv[7].lower()=='true')
     except:
         print(description)
         print(usage)

@@ -70,3 +70,14 @@ class CommonUtilsTestCase(unittest.TestCase):
         self.assertEqual(get_game_date_from_text(
             "17th c.",
             "gogod\\0196-1699\\1600JSTP23.sgf"), None)
+
+    def test_count_stones(self):
+        pattern = """
+        . . b
+        w w .
+        . . .
+        = = =
+        """
+        self.assertEqual(count_stones(pattern), 3)
+        self.assertEqual(count_stones_by_color(pattern, 'b'), 1)
+        self.assertEqual(count_stones_by_color(pattern, 'w'), 2)

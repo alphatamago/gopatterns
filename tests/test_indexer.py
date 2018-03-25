@@ -28,3 +28,66 @@ class IndexTestCase(unittest.TestCase):
             if len(unique_trs) != expected_num_unique_tr:
                 print(board, expected_num_unique_tr, unique_trs)
             self.assertEqual(len(unique_trs), expected_num_unique_tr)
+
+    def test_check_adjacent_check_adjacent_stones_outside_pattern_left(self):
+        indexer = PatternIndex((9, 9),
+                               1, 10,
+                               2,
+                               only_corners=True)
+        board = np.zeros((19, 19), dtype=np.str)
+        board.fill(EMPTY)
+        row = 18
+        col = 11
+        board[row, col-1] = BLACK
+        board[row, col] = WHITE        
+        self.assertTrue(indexer.check_adjacent_stones_outside_pattern_(
+            board, 8, 0,
+            row, col))
+
+
+    def test_check_adjacent_check_adjacent_stones_outside_pattern_down(self):
+        indexer = PatternIndex((9, 9),
+                               1, 10,
+                               2,
+                               only_corners=True)
+        board = np.zeros((19, 19), dtype=np.str)
+        board.fill(EMPTY)
+        row = 10
+        col = 18
+        board[row - 1, col] = BLACK
+        board[row, col] = WHITE        
+        self.assertTrue(indexer.check_adjacent_stones_outside_pattern_(
+            board, 0, 8,
+            row, col))
+
+
+    def test_check_adjacent_check_adjacent_stones_outside_pattern_up(self):
+        indexer = PatternIndex((9, 9),
+                               1, 10,
+                               2,
+                               only_corners=True)
+        board = np.zeros((19, 19), dtype=np.str)
+        board.fill(EMPTY)
+        row = 8
+        col = 18
+        board[row + 1, col] = BLACK
+        board[row, col] = WHITE        
+        self.assertTrue(indexer.check_adjacent_stones_outside_pattern_(
+            board, 8, 8,
+            row, col))
+
+
+    def test_check_adjacent_check_adjacent_stones_outside_pattern_right(self):
+        indexer = PatternIndex((9, 9),
+                               1, 10,
+                               2,
+                               only_corners=True)
+        board = np.zeros((19, 19), dtype=np.str)
+        board.fill(EMPTY)
+        row = 18
+        col = 9
+        board[row, col+1] = BLACK
+        board[row, col] = WHITE
+        self.assertTrue(indexer.check_adjacent_stones_outside_pattern_(
+            board, 8, 8,
+            row, col))

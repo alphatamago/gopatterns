@@ -61,7 +61,6 @@ class PatternIndex(object):
         # self.index[pattern_hash(pattern)] = 
         self.index_ = {}
 
-
     def find_patterns_in_game(self, pathname):
         """
         Public method that takes a path to a SGF file, reads the file, finds
@@ -79,13 +78,28 @@ class PatternIndex(object):
         f = open(pathname, "rb")
         sgf_src = f.read()
         f.close()
+        return self.find_patterns_in_game_str(sgf_src, game_id=pathname)
+
+
+    def find_patterns_in_game_str(self, sgf_src, game_id):
+        """
+        Similar to find_patterns_in_game but takes the game record directly
+        as a string.
+
+        sgf_src: SGF as a sting
+        """
 
         sgf_game = None
         try:
             sgf_game = sgf.Sgf_game.from_bytes(sgf_src)
+        except Exception as e:
+            print("Warning: cannot open game", sgf_src, ", reason:", e)
+            return ([], None)
+
+        try:
             board, plays = sgf_moves.get_setup_and_moves(sgf_game)
         except Exception as e:
-            print("Warning: cannot process game", pathname, ", reason:", e)
+            print("Warning: cannot setup game", sgf_game, ", reason:", e)
             return ([], None)
 
         patterns_found = []
@@ -106,14 +120,14 @@ class PatternIndex(object):
             num_moves += 1
             try:
                 board.play(row, col, colour)
-                for pattern in self.extract_board_patterns_after_move_(pathname,
+                for pattern in self.extract_board_patterns_after_move_(game_id,
                                                                        num_moves,
                                                                        board,
                                                                        row, col):
                     patterns_found.append(pattern)
             except ValueError as e:
-                print("Error processing", pathname, "at move:", num_moves, ":",
-                      e)
+                print("Error processing game", game_id, "sgf:", sgf_src,
+                      "at move:", num_moves, ":", e)
                 break
         return (patterns_found, date)
 
@@ -228,6 +242,9 @@ class PatternIndex(object):
         already_found_corner_match = False
         
         np_board = board_to_np(board.board)
+        # TODO - if the pattern is not square, we need to do one more
+        # check with the width/height swapped,
+        # else we are missing some patterns...
         for x in range(self.pat_dim[0]):
             for y in range(self.pat_dim[1]):
                 # We regard (row, col) as being at location (x, y) in the
@@ -250,7 +267,7 @@ class PatternIndex(object):
                     num_stones > self.max_stones_in_pattern_):
                     # Failed the number-of-stones test
                     continue
-                
+
                 if self.check_adjacent_stones_outside_pattern_(np_board, x, y,
                                                                row, col):
                     # There are stones outside of the pattern, in contact with
@@ -296,10 +313,9 @@ class PatternIndex(object):
                         (pat,
                          board_to_np([EDGE] * pat.shape[0]).reshape(
                              (pat.shape[0], 1))))
-
                 pattern_match_info = PatternMatchInfo(filename=pathname,
                                                       move_num=num_moves,
-                                                      location=(row-x, col-y))
+                                                      location=(row, col))
                 possible_matches.append(
                     PatternMatchFeatures(pattern=pat,
                                          edge_up=edge_up,
@@ -321,12 +337,16 @@ class PatternIndex(object):
                            pattern_features.edge_up))
             if self.only_corners and not has_corner:
                 continue
+            """ TODO - do we want this?
             if already_found_corner_match:
                 if not has_corner:
                     continue
+            """
             normalized_pattern = self.add_to_index_(
                 pattern_features.pattern,
                 pattern_features.info)
+            #print("Found pat match at move", pattern_features.info.move_num,
+            #      pattern_features.info.location)
             yield normalized_pattern
 
 
@@ -353,7 +373,7 @@ class PatternIndex(object):
                     return True
         # Check last pattern column, if not on right-edge
         if (col - y + self.pat_dim[1]) < board.shape[1] - 1:
-            c = col - y + self.pat_dim[1]
+            c = col - y + self.pat_dim[1] - 1
             for r in range(row - x, row - x + self.pat_dim[0]):
                 if (board[r, c] != EMPTY) and (board[r, c + 1] != EMPTY):
                     # Found outside adjacent, not a good pattern
@@ -367,7 +387,7 @@ class PatternIndex(object):
                     return True
         # Check last pattern row, if not on bottom-edge
         if row - x + self.pat_dim[0] < board.shape[0] - 1:
-            r = row - x + self.pat_dim[0]
+            r = row - x + self.pat_dim[0] - 1
             for c in range(col - y, col - y + self.pat_dim[1]):
                 if (board[r, c] != EMPTY) and (board[r + 1, c] != EMPTY):
                     # Found outside adjacent, not a good pattern

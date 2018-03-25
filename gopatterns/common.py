@@ -62,7 +62,26 @@ def string_to_np_pattern(pattern, cell_sep=CELL_SEP, row_sep=ROW_SEP):
     return np.array([row.split(cell_sep) for row in pattern.split(row_sep)])
 
 
+def print_pat(pattern):
+    """
+    Prints a string pattern
+    """
+    # Patterns already have \n as line separators, how convenient...
+    print(pattern)
+
+
+def count_stones(pattern):
+    return pattern.count('w') + pattern.count('b')
+
+
+def count_stones_by_color(pattern, color):
+    return pattern.count(color)
+
+
 def pretty_print(pattern):
+    """
+    Prints a numpy pattern
+    """
     for r in range(pattern.shape[0]):
         for c in range(pattern.shape[1]):
             color = pattern[r, c]
@@ -80,7 +99,7 @@ def pretty_print(pattern):
 def get_game_date_from_sgf(sgf_game, pathname=""):
     root = sgf_game.get_root()
     if not root.has_property('DT'):
-        sys.stderr.write("Missing DT in filename: %s\n" % pathname)
+        # sys.stderr.write("Missing DT in filename: %s\n" % pathname)
         return None        
     dt_value = root.get_raw('DT').decode(root.get_encoding())
     return get_game_date_from_text(dt_value, pathname)
@@ -150,6 +169,7 @@ def get_game_date_from_text(dt_value, pathname="", verbose=False):
 
     return None
 
+
 def extract_date_from_text(text, date_patterns_and_formats):
     for (date_pattern, date_format) in date_patterns_and_formats:
         search_result = date_pattern.search(text)
@@ -173,3 +193,55 @@ def extract_date_from_text(text, date_patterns_and_formats):
                 return None
     return None
             
+
+def build_pattern_timeline(pattern, pattern_frequency_in_epochs, versions):
+    result = []
+    for v in versions:
+        try:
+            freq = pattern_frequency_in_epochs[v]
+        except KeyError:
+            freq = 0.0
+        result.append(freq)
+    return result
+
+
+def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
+    # We are reading here a dataset in CSV format, with columns 'pattern' and <timeline_columns>
+    # This can be produced for instance like this:
+    # find_patterns_in_collection.py <PATH_TO_DIRECOTRY_WITH_SGF_FILES> 9 9 3 10 40 True <some_name>
+    collection_df = pd.read_csv(csv_pathname)
+    if order_by_timeline:
+        collection_df = collection_df.sort_values(by=timeline_column)
+
+    # How many patterns in each epoch
+    val_cnt = collection_df[timeline_column].value_counts()
+    mean_count = val_cnt.describe()['50%']
+    low_freq_epochs = [v for v in val_cnt.index if val_cnt[v]<=.25 * mean_count]
+    print("Dropping epochs with low data:", low_freq_epochs)
+    collection_df = collection_df.drop(
+        collection_df[collection_df[timeline_column].isin(low_freq_epochs)].index)
+    versions = collection_df[timeline_column].unique()
+
+    # pattern_count_by_version[version][pattern] = count (of pattern in version)
+    pattern_count_by_version = {}
+    for index, data in collection_df.iterrows():
+        version = data[timeline_column]
+        pattern = data['pattern']
+        if version not in pattern_count_by_version:
+            pattern_count_by_version[version] = {}
+        if pattern not in pattern_count_by_version[version]:
+            pattern_count_by_version[version][pattern] = 0
+        pattern_count_by_version[version][pattern] += 1
+    
+    # pattern_frequency_in_epochs[pattern][version] = frequency (of patter in epoch)
+    pattern_frequency_in_epochs = {}
+    for version, pattern_infos in pattern_count_by_version.items():
+        num_patterns_in_version = sum([v for v in pattern_infos.values()])
+        assert num_patterns_in_version > 0
+        for pattern, count in pattern_infos.items():
+            if pattern not in pattern_frequency_in_epochs:
+                pattern_frequency_in_epochs[pattern] = {}
+            assert version not in pattern_frequency_in_epochs[pattern]
+            pattern_frequency_in_epochs[pattern][version] = 1.0 * count / num_patterns_in_version
+
+    return collection_df, versions, pattern_count_by_version, pattern_frequency_in_epochs
