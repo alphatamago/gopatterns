@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 
 from gopatterns.common import *
 
+def custom_figsize():
+    plt.figure(figsize=(8,5))    
+
 def process_pattern_for_jgoboard(pattern, verbose=False):
     """
     Given a pattern as a string, generates info needed to be able to view
@@ -145,15 +148,17 @@ def html_timeline_top_patterns_from_version(f,
                                             imgcnt,
                                             version, 
                                             versions,
+                                            version_ids,
                                             epoch_to_patterns,
                                             pattern_to_epochs,
                                             avoid_patterns,
                                             max_display_patterns,
                                             min_num_stones,
                                             max_num_stones,
-                                            min_delta_colors=None,
-                                            max_delta_colors=None,
-                                            min_epochs_with_pattern=1):
+                                            min_delta_colors,
+                                            max_delta_colors,
+                                            min_epochs_with_pattern,
+                                            xticks='epochs'):
     """
     Find the most frequent patterns from a given version and generates HTML to
     show their popularity across all other versions.
@@ -188,18 +193,7 @@ def html_timeline_top_patterns_from_version(f,
     display_patterns = []
     for pattern, count in patterns_in_epoch:
         assert pattern not in avoid_patterns
-        num_black_stones = count_stones_by_color(pattern, 'b')
-        num_white_stones = count_stones_by_color(pattern, 'w')
-        num_stones = num_black_stones + num_white_stones
-        if num_stones < min_num_stones or num_stones > max_num_stones:
-            # This pattern has too few or too many stones
-            continue
-
-        delta = abs(num_black_stones - num_white_stones)
-        if ((max_delta_colors is not None and (delta > max_delta_colors)) or
-            (min_delta_colors is not None and (delta < min_delta_colors))):
-            # This pattern has too large of an imbalance between black/white
-            # stones
+        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
             continue
 
         if len(pattern_to_epochs[pattern]) < min_epochs_with_pattern:
@@ -226,8 +220,13 @@ def html_timeline_top_patterns_from_version(f,
                                                   versions)
         f.write(pattern_as_html(pattern))
         f.write("\n")
-        plt.figure()
-        plt.bar(range(len(versions)), pattern_timeline)
+        custom_figsize()
+        plt.bar(range(len(versions)), pattern_timeline, color='blue')
+        # plt.plot(pattern_timeline, color='blue')
+        if xticks=='epochs':
+            plt.xticks(range(len(pattern_count_by_version)), versions, rotation='vertical')
+        plt.axvline(x=version_ids[version], color='red')
+        
         imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
         f.write("<div><img src=\"%s\"></div>\n" %
                 ("%s/%s.png" % (relative_img_dir, imgcnt)))
@@ -239,28 +238,75 @@ def html_timeline_top_patterns_from_version(f,
     return imgcnt
 
 
-def generate_patterns_frequency_html(
+def html_timeline_top_patterns_global(
+    f,
+    full_img_dir,
+    relative_img_dir,
+    imgcnt,
     versions,
-    pattern_count_by_version, 
-    pattern_frequency_in_epochs,
-    outputdir,
-    max_display_patterns=3,
-    min_num_stones=10,
-    max_num_stones=10,
-    min_delta_colors=1,        
-    max_delta_colors=1,
-    min_epochs_with_pattern=5,
-    html_filename="patterns.html",
-    imgdir="img"):
+    pattern_to_epochs,
+    popular_patterns,
+    max_display_patterns,
+    min_num_stones,
+    max_num_stones,
+    min_delta_colors,
+    max_delta_colors,
+    xticks='epochs'):
     """
-    Creates outputdir and outputdir/imgdir paths. Fails if already exisits.
-    Writes HTML file to outputdir/html_filename and writes images for plots
-    to outputdir/imgdir/0.png, outputdir/imgdir/1.png, etc.
+    Find the most frequent global patterns and generates HTML to
+    show their popularity across all other versions.
+    The generated HTML is written to the f file handle which is an already open,
+    writable file.
+    This is used in a loop, for several versions, so the file open/close is
+    handled by the caller.
+  
+    The plot showing the pattern's
+    frequency across various versions is a PNG file. Each such PNG file is
+    written to the full_img_dir directory, and is reffered to in HTML via
+    the relative_img_dir path, for instance as relative_img_dir/0.png, etc.
+
+    versions: list of version ids in chronological order (for graphing purposes)
+    
+    max_delta_colors: max abs(num_black_stones-num_white_stones)
+    
+    <div class="jgoboard" data-jgosize="19x19" data-jgoview="M7-T1">
+    ....
+    oo.x
+    .xxx
+    ....
+    </div>
     """
-    full_imgdir = os.path.join(outputdir, imgdir)
-    os.makedirs(full_imgdir)
-    f = open(os.path.join(outputdir, html_filename), 'w')
-    f.write("""
+
+    display_patterns = []
+    for pattern, score in popular_patterns:
+        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
+            continue
+        display_patterns.append(pattern)
+        if len(display_patterns) >= max_display_patterns:
+            break
+
+    for pattern in display_patterns:
+        pattern_timeline = build_pattern_timeline(pattern,
+                                                  pattern_to_epochs[pattern],
+                                                  versions)
+        f.write(pattern_as_html(pattern))
+        f.write("\n")
+        custom_figsize()
+        plt.bar(range(len(versions)), pattern_timeline, color='blue')
+        if xticks =='epochs': 
+            plt.xticks(range(len(pattern_count_by_version)), versions, rotation='vertical')
+        
+        imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
+        f.write("<div><img src=\"%s\"></div>\n" %
+                ("%s/%s.png" % (relative_img_dir, imgcnt)))
+        f.write("<div class=\"clrdiv\"></div>\n")
+        imgcnt += 1
+        plt.savefig(imgfilename, bbox_inches='tight')
+        plt.close()
+    return imgcnt
+
+
+HTML_BEGIN = """
         <!DOCTYPE HTML>
         <html lang="en">
         <head>
@@ -276,34 +322,96 @@ def generate_patterns_frequency_html(
           </style>
         </head>
         <body>
-        """)  
+        """
 
-    avoid_patterns = set()
-    imgcnt = 0
-    for v in versions:
-        imgcnt = html_timeline_top_patterns_from_version(
-            f,
-            full_imgdir,
-            imgdir,
-            imgcnt,
-            v,
-            versions,
-            pattern_count_by_version, 
-            pattern_frequency_in_epochs,
-            avoid_patterns,
-            max_display_patterns,
-            min_num_stones,
-            max_num_stones,
-            min_delta_colors,
-            max_delta_colors,
-            min_epochs_with_pattern)
-
-    f.write("""
+HTML_END = """
         <script type="text/javascript" src="dist/jgoboard-latest.js"></script>
         <script type="text/javascript" src="large/board.js"></script>
         <script type="text/javascript" src="medium/board.js"></script>
         <script type="text/javascript">JGO.auto.init(document, JGO);</script>
         </body>
         </html>
-        """)
+        """
+
+def generate_patterns_frequency_html(
+    versions,
+    pattern_count_by_version, 
+    pattern_frequency_in_epochs,
+    outputdir,
+    display_global=True,
+    display_by_version=True,
+    max_display_patterns_global=30,
+    max_display_patterns_per_version=3,
+    unique_patterns=True,
+    min_num_stones=10,
+    max_num_stones=10,
+    min_delta_colors=1,        
+    max_delta_colors=1,
+    min_epochs_with_pattern=2,
+    xticks='epochs',
+    html_filename="patterns.html",
+    imgdir="img"):
+    """
+    Creates outputdir and outputdir/imgdir paths. Fails if already exisits.
+    Writes HTML file to outputdir/html_filename and writes images for plots
+    to outputdir/imgdir/0.png, outputdir/imgdir/1.png, etc.
+    """
+    full_imgdir = os.path.join(outputdir, imgdir)
+    os.makedirs(full_imgdir)
+    f = open(os.path.join(outputdir, html_filename), 'w')
+    f.write(HTML_BEGIN)  
+
+    version_ids = {}
+    for (i, v) in enumerate(list(versions)):
+        version_ids[v] = i
+    
+    popular_patterns = sorted([(p, sum([k[1] for k in pattern_frequency_in_epochs[p].items()]))
+                               for p in pattern_frequency_in_epochs.keys()],
+                               key=lambda x: x[1],
+                               reverse=True)
+
+    imgcnt = 0
+
+    if display_global:
+        imgcnt = html_timeline_top_patterns_global(
+            f,
+            full_imgdir,
+            imgdir,
+            imgcnt,
+            versions,
+            pattern_frequency_in_epochs,
+            popular_patterns,
+            max_display_patterns_global,
+            min_num_stones,
+            max_num_stones,
+            min_delta_colors,
+            max_delta_colors,
+            xticks)
+
+    if display_by_version:
+        avoid_patterns = None
+        if unique_patterns:
+            avoid_patterns = set()
+        for v in versions:
+            imgcnt = html_timeline_top_patterns_from_version(
+                f,
+                full_imgdir,
+                imgdir,
+                imgcnt,
+                v,
+                versions,
+                version_ids,
+                pattern_count_by_version, 
+                pattern_frequency_in_epochs,
+                avoid_patterns,
+                max_display_patterns_per_version,
+                min_num_stones,
+                max_num_stones,
+                min_delta_colors,
+                max_delta_colors,
+                min_epochs_with_pattern,
+                xticks)
+
+    f.write(HTML_END)
     f.close()
+

@@ -37,7 +37,7 @@ def main(argv):
 
     first_index = 0
     max_num_versions = 100
-    max_games_per_version = 3000
+    max_games_per_version = 1000
 
     try:
         pathname = argv[1]

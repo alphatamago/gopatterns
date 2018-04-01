@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 import re
 import sys
 
@@ -192,7 +193,7 @@ def extract_date_from_text(text, date_patterns_and_formats):
                                  (search_result, date_format, e))
                 return None
     return None
-            
+
 
 def build_pattern_timeline(pattern, pattern_frequency_in_epochs, versions):
     result = []
@@ -224,7 +225,11 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
 
     # pattern_count_by_version[version][pattern] = count (of pattern in version)
     pattern_count_by_version = {}
+    count = 0
     for index, data in collection_df.iterrows():
+        count += 1
+        if count % 100000 == 0:
+            print("rows: ", count, "out of:", collection_df.shape[0])
         version = data[timeline_column]
         pattern = data['pattern']
         if version not in pattern_count_by_version:
@@ -232,7 +237,7 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
         if pattern not in pattern_count_by_version[version]:
             pattern_count_by_version[version][pattern] = 0
         pattern_count_by_version[version][pattern] += 1
-    
+
     # pattern_frequency_in_epochs[pattern][version] = frequency (of patter in epoch)
     pattern_frequency_in_epochs = {}
     for version, pattern_infos in pattern_count_by_version.items():
@@ -245,3 +250,19 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
             pattern_frequency_in_epochs[pattern][version] = 1.0 * count / num_patterns_in_version
 
     return collection_df, versions, pattern_count_by_version, pattern_frequency_in_epochs
+
+
+def is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
+        num_black_stones = count_stones_by_color(pattern, 'b')
+        num_white_stones = count_stones_by_color(pattern, 'w')
+        num_stones = num_black_stones + num_white_stones
+        if num_stones < min_num_stones or num_stones > max_num_stones:
+            # This pattern has too few or too many stones
+            return False
+        delta = abs(num_black_stones - num_white_stones)
+        if ((max_delta_colors is not None and (delta > max_delta_colors)) or
+            (min_delta_colors is not None and (delta < min_delta_colors))):
+            # This pattern has too large of an imbalance between black/white
+            # stones
+            return False
+        return True

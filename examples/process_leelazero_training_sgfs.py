@@ -34,8 +34,8 @@ def main(argv):
     max_moves = 0
     only_corners = False
 
-    first_index = 1500000
-    max_num_versions = 100
+    first_index = 0
+    max_num_versions = 200
     max_games_per_version = 1000
 
     try:
