@@ -199,7 +199,7 @@ def build_pattern_timeline(pattern, pattern_frequency_in_epochs, versions):
     result = []
     for v in versions:
         try:
-            freq = pattern_frequency_in_epochs[v]
+            freq = pattern_frequency_in_epochs[v][1]
         except KeyError:
             freq = 0.0
         result.append(freq)
@@ -238,7 +238,8 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
             pattern_count_by_version[version][pattern] = 0
         pattern_count_by_version[version][pattern] += 1
 
-    # pattern_frequency_in_epochs[pattern][version] = frequency (of patter in epoch)
+    # pattern_frequency_in_epochs[pattern][version] = (count, frequency)
+    # (of pattern in epoch)
     pattern_frequency_in_epochs = {}
     for version, pattern_infos in pattern_count_by_version.items():
         num_patterns_in_version = sum([v for v in pattern_infos.values()])
@@ -247,12 +248,15 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
             if pattern not in pattern_frequency_in_epochs:
                 pattern_frequency_in_epochs[pattern] = {}
             assert version not in pattern_frequency_in_epochs[pattern]
-            pattern_frequency_in_epochs[pattern][version] = 1.0 * count / num_patterns_in_version
+            freq = 1.0 * count / num_patterns_in_version
+            pattern_frequency_in_epochs[pattern][version] = (count, freq)
 
-    return collection_df, versions, pattern_count_by_version, pattern_frequency_in_epochs
+    return (collection_df, versions, pattern_count_by_version,
+            pattern_frequency_in_epochs)
 
 
-def is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
+def is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors,
+                          min_num_stones, max_num_stones):
         num_black_stones = count_stones_by_color(pattern, 'b')
         num_white_stones = count_stones_by_color(pattern, 'w')
         num_stones = num_black_stones + num_white_stones

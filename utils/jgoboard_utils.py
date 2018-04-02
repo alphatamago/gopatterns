@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from gopatterns.common import *
 
 def custom_figsize():
-    plt.figure(figsize=(8,5))    
+    plt.figure(figsize=(5,3))
 
 def process_pattern_for_jgoboard(pattern, verbose=False):
     """
@@ -150,7 +150,7 @@ def html_timeline_top_patterns_from_version(f,
                                             versions,
                                             version_ids,
                                             epoch_to_patterns,
-                                            pattern_to_epochs,
+                                            pattern_frequency_in_epochs,
                                             avoid_patterns,
                                             max_display_patterns,
                                             min_num_stones,
@@ -193,17 +193,18 @@ def html_timeline_top_patterns_from_version(f,
     display_patterns = []
     for pattern, count in patterns_in_epoch:
         assert pattern not in avoid_patterns
-        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
+        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors,
+                                     min_num_stones, max_num_stones):
             continue
 
-        if len(pattern_to_epochs[pattern]) < min_epochs_with_pattern:
+        if len(pattern_frequency_in_epochs[pattern]) < min_epochs_with_pattern:
             # This pattern does not appear in enough epochs
             continue
 
-        # If it occurs in only one epoch, make sure it does not occur only once, since that would
-        # create a lot of noisy patterns
-        if len(pattern_to_epochs[pattern]) == 1:
-            ep = list(pattern_to_epochs[pattern].keys())[0]
+        # If it occurs in only one epoch, make sure it does not occur only once,
+        # since that would create a lot of noisy patterns.
+        if len(pattern_frequency_in_epochs[pattern]) == 1:
+            ep = list(pattern_frequency_in_epochs[pattern].keys())[0]
             if epoch_to_patterns[ep][pattern] < 2:
                 continue
         
@@ -215,16 +216,18 @@ def html_timeline_top_patterns_from_version(f,
         f.write("<h1>Version %s</h1>\n" % version)
 
     for pattern in display_patterns:
-        pattern_timeline = build_pattern_timeline(pattern,
-                                                  pattern_to_epochs[pattern],
-                                                  versions)
+        pattern_timeline = build_pattern_timeline(
+            pattern,
+            pattern_frequency_in_epochs[pattern],
+            versions)
         f.write(pattern_as_html(pattern))
         f.write("\n")
         custom_figsize()
         plt.bar(range(len(versions)), pattern_timeline, color='blue')
         # plt.plot(pattern_timeline, color='blue')
         if xticks=='epochs':
-            plt.xticks(range(len(pattern_count_by_version)), versions, rotation='vertical')
+            plt.xticks(range(len(pattern_count_by_version)), versions,
+                       rotation='vertical')
         plt.axvline(x=version_ids[version], color='red')
         
         imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
@@ -244,8 +247,7 @@ def html_timeline_top_patterns_global(
     relative_img_dir,
     imgcnt,
     versions,
-    pattern_to_epochs,
-    popular_patterns,
+    pattern_frequency_in_epochs,
     max_display_patterns,
     min_num_stones,
     max_num_stones,
@@ -277,24 +279,41 @@ def html_timeline_top_patterns_global(
     </div>
     """
 
+    print("html_timeline_top_patterns_global")
+
+    popular_patterns = sorted([(p, sum([k[1][0]
+                                        for k in
+                                        pattern_frequency_in_epochs[p].items()]))
+                               for p in pattern_frequency_in_epochs.keys()],
+                               key=lambda x: x[1],
+                               reverse=True)
+
     display_patterns = []
     for pattern, score in popular_patterns:
-        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors, min_num_stones, max_num_stones):
+        if not is_pattern_acceptable(pattern, min_delta_colors, max_delta_colors,
+                                     min_num_stones, max_num_stones):
             continue
-        display_patterns.append(pattern)
-        if len(display_patterns) >= max_display_patterns:
+        display_patterns.append((pattern, score))
+        if (max_display_patterns is not None and
+            len(display_patterns) >= max_display_patterns):
             break
 
-    for pattern in display_patterns:
-        pattern_timeline = build_pattern_timeline(pattern,
-                                                  pattern_to_epochs[pattern],
-                                                  versions)
+    print("Generating HTML for %s patterns" % len(display_patterns))
+    for i, (pattern, score) in enumerate(display_patterns):
+        if i % 100 == 0:
+            print(i+1, "out of", len(display_patterns))
+        pattern_timeline = build_pattern_timeline(
+            pattern,
+            pattern_frequency_in_epochs[pattern],
+            versions)
+        f.write("<p>id:%s count:%s" % (i+1, score))
         f.write(pattern_as_html(pattern))
         f.write("\n")
         custom_figsize()
         plt.bar(range(len(versions)), pattern_timeline, color='blue')
         if xticks =='epochs': 
-            plt.xticks(range(len(pattern_count_by_version)), versions, rotation='vertical')
+            plt.xticks(range(len(pattern_count_by_version)), versions,
+                       rotation='vertical')
         
         imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
         f.write("<div><img src=\"%s\"></div>\n" %
@@ -338,16 +357,16 @@ def generate_patterns_frequency_html(
     pattern_count_by_version, 
     pattern_frequency_in_epochs,
     outputdir,
-    display_global=True,
-    display_by_version=True,
-    max_display_patterns_global=30,
-    max_display_patterns_per_version=3,
-    unique_patterns=True,
-    min_num_stones=10,
-    max_num_stones=10,
-    min_delta_colors=1,        
-    max_delta_colors=1,
-    min_epochs_with_pattern=2,
+    display_global,
+    display_by_version,
+    max_display_patterns_global,
+    max_display_patterns_per_version,
+    unique_patterns,
+    min_num_stones,
+    max_num_stones,
+    min_delta_colors,        
+    max_delta_colors,
+    min_epochs_with_pattern,
     xticks='epochs',
     html_filename="patterns.html",
     imgdir="img"):
@@ -364,11 +383,6 @@ def generate_patterns_frequency_html(
     version_ids = {}
     for (i, v) in enumerate(list(versions)):
         version_ids[v] = i
-    
-    popular_patterns = sorted([(p, sum([k[1] for k in pattern_frequency_in_epochs[p].items()]))
-                               for p in pattern_frequency_in_epochs.keys()],
-                               key=lambda x: x[1],
-                               reverse=True)
 
     imgcnt = 0
 
@@ -380,7 +394,6 @@ def generate_patterns_frequency_html(
             imgcnt,
             versions,
             pattern_frequency_in_epochs,
-            popular_patterns,
             max_display_patterns_global,
             min_num_stones,
             max_num_stones,
