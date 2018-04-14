@@ -1,4 +1,5 @@
 from collections import namedtuple
+import logging
 import re
 import sys
 import time
@@ -14,24 +15,56 @@ from utils.jgoboard_utils import *
 
 if __name__ == '__main__':
 
+    logging.getLogger().setLevel(logging.DEBUG)
+    
     csv_input = sys.argv[1]
     output_dir = sys.argv[2]
 
-    TIMELINE_COL = "version"
+    # Typically: version or year
+    TIMELINE_COL = sys.argv[3]
 
+    SORT_BY_EPOCH = sys.argv[4].lower()
+    assert SORT_BY_EPOCH in ['true', 'false', '1', '0']
+    SORT_BY_EPOCH = (SORT_BY_EPOCH in ['true', '1'])
+
+    MIN_EPOCH = sys.argv[5]
+    if MIN_EPOCH.lower() == 'none':
+        MIN_EPOCH = None
+
+    MAX_EPOCH = sys.argv[6]
+    if MAX_EPOCH.lower() == 'none':
+        MAX_EPOCH = None
+
+    logging.info('MIN_EPOCH=%s', MIN_EPOCH)
+    logging.info('MAX_EPOCH=%s', MAX_EPOCH)
+        
+    xticks = None
+    if sys.argv[7].lower() in ['true', '1']:
+        xticks = 'epochs'
+    logging.info("xticks: %s", xticks)
+
+    NUM_PATTERNS = 1000
+    
+    MIN_STONES = None
+    MAX_STONES = None
+    if len(sys.argv) == 11:
+        MIN_STONES = int(sys.argv[8])
+        MAX_STONES = int(sys.argv[9])
+        NUM_PATTERNS = int(sys.argv[10])
+        
     start = time.time()
     (collection_df, versions, pattern_count_by_version,
      pattern_frequency_in_epochs) = index_patterns(
-        csv_input, order_by_timeline=False,
-        timeline_column=TIMELINE_COL
-    )
-    print ("Done in time:", time.time()-start)
-    
+         csv_input, order_by_timeline=SORT_BY_EPOCH,
+         timeline_column=TIMELINE_COL,
+         min_epoch=MIN_EPOCH,
+         max_epoch=MAX_EPOCH,
+         min_num_stones=MIN_STONES, max_num_stones=MAX_STONES)
+    logging.info("Done in time: %s", time.time()-start)
+
     MIN_EPOCHS_WITH_PATTERN = 1
     MIN_DELTA_COLORS = None
     MAX_DELTA_COLORS = None
-    MIN_STONES = 8
-    MAX_STONES = 12
     suffix = "minepochs.%s_mindelta.%s_maxdelta.%s" % (MIN_EPOCHS_WITH_PATTERN,
                                                        MIN_DELTA_COLORS,
                                                        MAX_DELTA_COLORS)
@@ -42,7 +75,7 @@ if __name__ == '__main__':
             output_dir,
             display_global=True,
             display_by_version=False,
-            max_display_patterns_global=10000,
+            max_display_patterns_global=NUM_PATTERNS,
             max_display_patterns_per_version=None,
             unique_patterns=True,
             min_num_stones=MIN_STONES,
@@ -50,6 +83,6 @@ if __name__ == '__main__':
             min_delta_colors=MIN_DELTA_COLORS,
             max_delta_colors=MAX_DELTA_COLORS,
             min_epochs_with_pattern=MIN_EPOCHS_WITH_PATTERN,
-            xticks=None,
+            xticks=xticks,
             html_filename="patterns.html",
             imgdir="img")

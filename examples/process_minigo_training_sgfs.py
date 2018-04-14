@@ -36,7 +36,7 @@ def main(argv):
     only_corners = False
 
     first_index = 0
-    max_num_versions = 100
+    max_num_versions = 400
     max_games_per_version = 1000
 
     try:
@@ -122,7 +122,8 @@ def main(argv):
                             0, [])
                     ver_pat_info = patterns_in_version[version]
                     if ver_pat_info.num_games < max_games_per_version:
-                        (patterns_found, _) = index.find_patterns_in_game(filename)
+                        (patterns_found, _) = index.find_patterns_in_game(
+                            filename)
                         # print('sgf')
                         if not patterns_found:
                             print("No patterns:", filename)

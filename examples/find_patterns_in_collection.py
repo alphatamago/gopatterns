@@ -17,6 +17,8 @@ from gopatterns.indexer import PatternIndex, BLACK, WHITE
 
 
 def main(argv):
+    logging.getLogger().setLevel(logging.DEBUG)
+
     description = "Identifying patterns in a collection of SGF files."
     usage = ("%s <sgf dir> <pattern height>"
              " <pattern width> <min_stones> <max_stones>"
@@ -41,18 +43,18 @@ def main(argv):
         only_corners = bool(argv[7])
         pd_output_fname = argv[8]
     except:
-        print(description)
-        print(usage)
+        logging.info(description)
+        logging.info(usage)
         sys.exit(1)
 
             
-    print("pathname:", pathname)
-    print("pattern size:", pattern_dim1, "x", pattern_dim2)
-    print("min_stones_in_pattern:", min_stones_in_pattern)
-    print("max_stones_in_pattern", max_stones_in_pattern)
-    print("max_moves per game:", max_moves)
-    print("only_corner:", only_corners)
-    print("pd_output_fname:", pd_output_fname)
+    logging.info("pathname: %s", pathname)
+    logging.info("pattern size: %sx%s", pattern_dim1, pattern_dim2)
+    logging.info("min_stones_in_pattern: %s", min_stones_in_pattern)
+    logging.info("max_stones_in_pattern %s", max_stones_in_pattern)
+    logging.info("max_moves per game: %s", max_moves)
+    logging.info("only_corner: %s", only_corners)
+    logging.info("pd_output_fname: %s", pd_output_fname)
     
     index = PatternIndex(pat_dim=(pattern_dim1, pattern_dim2),
                          min_stones_in_pattern=min_stones_in_pattern,
@@ -65,9 +67,10 @@ def main(argv):
     years = []
     num_games = 0
     for root, dirnames, filenames in os.walk(pathname):
+        # if num_games >= 100: break
         for filename in fnmatch.filter(filenames, '*.sgf'):
             path = os.path.join(root, filename)
-            print("Processing", path)
+            logging.info("Processing %s", path)
             (patterns_found, date) = index.find_patterns_in_game(path)
             if date is not None:
                 num_games += 1

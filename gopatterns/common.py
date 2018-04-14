@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 import os
 import re
 import sys
@@ -101,7 +102,7 @@ def get_game_date_from_sgf(sgf_game, pathname=""):
     root = sgf_game.get_root()
     if not root.has_property('DT'):
         # sys.stderr.write("Missing DT in filename: %s\n" % pathname)
-        return None        
+        return None 
     dt_value = root.get_raw('DT').decode(root.get_encoding())
     return get_game_date_from_text(dt_value, pathname)
 
@@ -115,21 +116,21 @@ def get_game_date_from_text(dt_value, pathname="", verbose=False):
     """
 
     if verbose:
-        print("DT:[%s]" % dt_value)
+        logging.info("DT:[%s]", dt_value)
     search_result = date_pattern1.search(dt_value)
     if search_result is None:
         if verbose:
-            print("Failed to find a datetime in the SGF. Trying in file name")
+            logging.info("Failed to find a datetime in the SGF. Trying in file name")
         # some game collections have the date in the filename
         search_result = date_pattern1.search(pathname)
         if search_result is None:
             if verbose:
-                print("Failed to find a datetime. Trying simpler patterns...")
+                logging.info("Failed to find a datetime. Trying simpler patterns...")
             for p in [date_pattern2, date_pattern3, date_pattern4]:
                 search_result = p.search(dt_value)
                 if search_result is not None:
                     if verbose:
-                        print("Found a match:", search_result.group(0))
+                        logging.info("Found a match: %s", search_result.group(0))
                     break
     if search_result is None:
         sys.stderr.write("Failed to find a datetime in the SGF or in filename: %s. DT: [%s]\n" % (pathname, dt_value))
@@ -156,7 +157,7 @@ def get_game_date_from_text(dt_value, pathname="", verbose=False):
     """
 
     if verbose:
-        print("DT:[%s]" % dt_value)
+        logging.info("DT:[%s]" % dt_value)
 
     result_from_dt = extract_date_from_text(dt_value, date_patterns_and_formats)
     if result_from_dt is not None:
@@ -206,32 +207,69 @@ def build_pattern_timeline(pattern, pattern_frequency_in_epochs, versions):
     return result
 
 
-def index_patterns(csv_pathname, timeline_column, order_by_timeline=False):
-    # We are reading here a dataset in CSV format, with columns 'pattern' and <timeline_columns>
+def index_patterns(csv_pathname, timeline_column, order_by_timeline=False,
+                   min_epoch=None,
+                   max_epoch=None,
+                   min_num_stones=None, max_num_stones=None,
+                   min_delta_colors=None, max_delta_colors=None):
+    # We are reading here a dataset in CSV format, with columns 'pattern' and
+    # <timeline_columns>
     # This can be produced for instance like this:
     # find_patterns_in_collection.py <PATH_TO_DIRECOTRY_WITH_SGF_FILES> 9 9 3 10 40 True <some_name>
-    collection_df = pd.read_csv(csv_pathname)
+    collection_df = pd.read_csv(csv_pathname) # , nrows=100000)
+    # limit is for testing
+    
     if order_by_timeline:
+        logging.info("Sorting by timeline column %s", timeline_column)
         collection_df = collection_df.sort_values(by=timeline_column)
+    if min_epoch:
+        logging.info("size before filtering by min_epoch %s: %s", min_epoch,
+                     collection_df.shape[0])
+        if collection_df[timeline_column].dtype != np.object:
+            min_epoch = int(min_epoch)        
+        collection_df = collection_df[collection_df[timeline_column] >=
+                                      min_epoch]
+        logging.info("size after filtering by min_epoch %s: %s", min_epoch,
+                     collection_df.shape[0])
+
+    if max_epoch:
+        logging.info("size before filtering by max_epoch %s: %s", max_epoch,
+                     collection_df.shape[0])
+        if collection_df[timeline_column].dtype != np.object:
+            max_epoch = int(max_epoch)        
+        collection_df = collection_df[collection_df[timeline_column] <=
+                                      max_epoch]
+        logging.info("size after filtering by max_epoch %s: %s", max_epoch,
+                     collection_df.shape[0])
 
     # How many patterns in each epoch
     val_cnt = collection_df[timeline_column].value_counts()
     mean_count = val_cnt.describe()['50%']
-    low_freq_epochs = [v for v in val_cnt.index if val_cnt[v]<=.25 * mean_count]
-    print("Dropping epochs with low data:", low_freq_epochs)
+    logging.info("Mean num patterns per epoch: %s", mean_count)
+    low_freq_epochs = [v for v in val_cnt.index if val_cnt[v]<(.1 * mean_count)]
+    logging.info("Dropping epochs with low data: %s",
+                 [(v, val_cnt[v]) for v in val_cnt.index
+                  if val_cnt[v]<=.01 * mean_count])
     collection_df = collection_df.drop(
-        collection_df[collection_df[timeline_column].isin(low_freq_epochs)].index)
+        collection_df[collection_df[timeline_column].
+                      isin(low_freq_epochs)].index)
     versions = collection_df[timeline_column].unique()
 
     # pattern_count_by_version[version][pattern] = count (of pattern in version)
     pattern_count_by_version = {}
     count = 0
     for index, data in collection_df.iterrows():
+        pattern = data['pattern']
+        if (min_num_stones is not None) or (max_num_stones is not None):
+            if not is_pattern_acceptable(pattern, min_delta_colors,
+                                         max_delta_colors,
+                                         min_num_stones, max_num_stones):
+                continue
+
         count += 1
         if count % 100000 == 0:
-            print("rows: ", count, "out of:", collection_df.shape[0])
+            logging.info("rows: %s out of: %s", count, collection_df.shape[0])
         version = data[timeline_column]
-        pattern = data['pattern']
         if version not in pattern_count_by_version:
             pattern_count_by_version[version] = {}
         if pattern not in pattern_count_by_version[version]:

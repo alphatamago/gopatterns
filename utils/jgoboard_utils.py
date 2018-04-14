@@ -1,12 +1,29 @@
 import os
 
+import logging
 import matplotlib
 import matplotlib.pyplot as plt
 
 from gopatterns.common import *
 
 def custom_figsize():
-    plt.figure(figsize=(5,3))
+    plt.figure(figsize=(10,3))
+
+
+def custom_plot(xticks, versions, pattern_timeline):
+    custom_figsize()
+    if xticks=='epochs':
+        plt.plot(versions, pattern_timeline)
+        plt.xticks(range(len(versions)), versions, rotation='vertical')
+    else:
+        plt.plot(pattern_timeline)
+        plt.tick_params(
+                axis='x', 
+                which='both',
+                bottom='off',
+                top='off',
+                labelbottom='off')
+
 
 def process_pattern_for_jgoboard(pattern, verbose=False):
     """
@@ -14,7 +31,7 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
     that pattern using jgoboard JS library
     """
     if verbose:
-        print(pattern)
+        logging.info(pattern)
     pattern = pattern.replace(' ', '').replace('\r', '')
 
     board_height = 19
@@ -35,7 +52,7 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
     height = len(pattern_rows)
     width = len(pattern_rows[0])
     if verbose:
-        print ("raw dims:", height, width)
+        logging.info("raw dims:", height, width)
 
     assert len(pattern_rows[0]) == len(pattern_rows[-1])
     
@@ -72,9 +89,10 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
         right_col = board_width - 1
 
     if verbose:
-        print ("BH, BW:", board_height, board_width)
-        print ("H, W:", height, width)
-        print("LC, LR, RC, RR:", left_col, upper_row, right_col, lower_row)
+        logging.info("BH, BW: %s, %s", board_height, board_width)
+        logging.info("H, W: %s, %s", height, width)
+        logging.info("LC, LR, RC, RR: %s, %s, %s, %s",
+                     left_col, upper_row, right_col, lower_row)
     
     if upper_row == -1:
         if lower_row == -1:
@@ -85,7 +103,8 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
     lower_row = upper_row - height + 1
     
     if verbose:
-        print(left_col, upper_row, right_col, lower_row)
+        logging.info("%s, %s, %s, %s",
+                     left_col, upper_row, right_col, lower_row)
     
     if left_col == -1:
         if right_col == -1:
@@ -96,7 +115,8 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
     right_col = left_col + width - 1
             
     if verbose:
-        print(left_col, upper_row, right_col, lower_row)
+        logging.info("%s, %s, %s, %s",
+                     left_col, upper_row, right_col, lower_row)
         
     assert left_col >= 0 and left_col < board_width
     assert right_col >= 0 and right_col < board_width
@@ -105,16 +125,19 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
         old_left_col = left_col
         left_col = chr(ord(left_col) + 1)
         if verbose:
-            print('right col was shifted from', old_left_col, 'to:', left_col)
+            logging.info('right col was shifted from %s to: %s',
+                         old_left_col, left_col)
     right_col = chr(ord('A') + right_col)
     if ord(right_col) >= ord('I'):
         old_right_col = right_col
         right_col = chr(ord(right_col) + 1)
         if verbose:
-            print('right col was shifted from', old_right_col, 'to:', right_col)
+            logging.info('right col was shifted from %s to %s',
+                         old_right_col, right_col)
     
     if verbose:
-        print(left_col, upper_row, right_col, lower_row)
+        logging.info("%s, %s, %s, %s",
+                     left_col, upper_row, right_col, lower_row)
     assert left_col >= 'A'
     assert right_col <= 'T'
     assert right_col != 'I'
@@ -126,7 +149,7 @@ def process_pattern_for_jgoboard(pattern, verbose=False):
     result = (processed_pattern, board_width, board_height,
               left_col, upper_row + 1, right_col, lower_row + 1 )
     if verbose:
-        print("result:", result)
+        logging.info("result: %s", result)
     return result
 
 
@@ -158,7 +181,7 @@ def html_timeline_top_patterns_from_version(f,
                                             min_delta_colors,
                                             max_delta_colors,
                                             min_epochs_with_pattern,
-                                            xticks='epochs'):
+                                            xticks):
     """
     Find the most frequent patterns from a given version and generates HTML to
     show their popularity across all other versions.
@@ -184,8 +207,8 @@ def html_timeline_top_patterns_from_version(f,
     </div>
     """
     
-    print("Processing top patterns from", version,
-        "min_num_stones", min_num_stones)
+    logging.info("Processing top patterns from %s min_num_stones %s",
+                 version, min_num_stones)
     patterns_in_epoch = sorted([x for x in epoch_to_patterns[version].items()
                                 if x[0] not in avoid_patterns],
                                key=lambda x: x[1], reverse=True)
@@ -222,12 +245,7 @@ def html_timeline_top_patterns_from_version(f,
             versions)
         f.write(pattern_as_html(pattern))
         f.write("\n")
-        custom_figsize()
-        plt.bar(range(len(versions)), pattern_timeline, color='blue')
-        # plt.plot(pattern_timeline, color='blue')
-        if xticks=='epochs':
-            plt.xticks(range(len(pattern_count_by_version)), versions,
-                       rotation='vertical')
+        custom_plot(xticks, versions, pattern_timeline)
         plt.axvline(x=version_ids[version], color='red')
         
         imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
@@ -253,7 +271,7 @@ def html_timeline_top_patterns_global(
     max_num_stones,
     min_delta_colors,
     max_delta_colors,
-    xticks='epochs'):
+    xticks):
     """
     Find the most frequent global patterns and generates HTML to
     show their popularity across all other versions.
@@ -279,7 +297,7 @@ def html_timeline_top_patterns_global(
     </div>
     """
 
-    print("html_timeline_top_patterns_global")
+    logging.info("html_timeline_top_patterns_global versions: %s", versions)
 
     popular_patterns = sorted([(p, sum([k[1][0]
                                         for k in
@@ -298,10 +316,10 @@ def html_timeline_top_patterns_global(
             len(display_patterns) >= max_display_patterns):
             break
 
-    print("Generating HTML for %s patterns" % len(display_patterns))
+    logging.info("Generating HTML for %s patterns", len(display_patterns))
     for i, (pattern, score) in enumerate(display_patterns):
         if i % 100 == 0:
-            print(i+1, "out of", len(display_patterns))
+            logging.info("%s out of %s", i+1, len(display_patterns))
         pattern_timeline = build_pattern_timeline(
             pattern,
             pattern_frequency_in_epochs[pattern],
@@ -309,11 +327,7 @@ def html_timeline_top_patterns_global(
         f.write("<p>id:%s count:%s" % (i+1, score))
         f.write(pattern_as_html(pattern))
         f.write("\n")
-        custom_figsize()
-        plt.bar(range(len(versions)), pattern_timeline, color='blue')
-        if xticks =='epochs': 
-            plt.xticks(range(len(pattern_count_by_version)), versions,
-                       rotation='vertical')
+        custom_plot(xticks, versions, pattern_timeline)
         
         imgfilename = os.path.join(full_img_dir, ("%s.png" % imgcnt))
         f.write("<div><img src=\"%s\"></div>\n" %
@@ -367,7 +381,7 @@ def generate_patterns_frequency_html(
     min_delta_colors,        
     max_delta_colors,
     min_epochs_with_pattern,
-    xticks='epochs',
+    xticks,
     html_filename="patterns.html",
     imgdir="img"):
     """
@@ -375,6 +389,11 @@ def generate_patterns_frequency_html(
     Writes HTML file to outputdir/html_filename and writes images for plots
     to outputdir/imgdir/0.png, outputdir/imgdir/1.png, etc.
     """
+
+    logging.info("num versions %s versions: %s", len(versions), versions)
+    logging.info("num patterns: %s", len(pattern_frequency_in_epochs))
+    logging.info("max_display_patterns_global: %s", max_display_patterns_global)
+
     full_imgdir = os.path.join(outputdir, imgdir)
     os.makedirs(full_imgdir)
     f = open(os.path.join(outputdir, html_filename), 'w')
@@ -427,4 +446,3 @@ def generate_patterns_frequency_html(
 
     f.write(HTML_END)
     f.close()
-

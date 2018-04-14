@@ -81,7 +81,7 @@ class PatternIndex(object):
         return self.find_patterns_in_game_str(sgf_src, game_id=pathname)
 
 
-    def find_patterns_in_game_str(self, sgf_src, game_id):
+    def find_patterns_in_game_str(self, sgf_src, game_id, fail_if_no_date=False):
         """
         Similar to find_patterns_in_game but takes the game record directly
         as a string.
@@ -92,14 +92,21 @@ class PatternIndex(object):
         sgf_game = None
         try:
             sgf_game = sgf.Sgf_game.from_bytes(sgf_src)
+            root = sgf_game.get_root()
+            if root.has_property('SZ'):
+                size = root.get_raw('SZ').decode(root.get_encoding())
+                if size != '19':
+                    logging.warning("Skipping game with size: %s", size)
+                    return ([], None)
+
         except Exception as e:
-            print("Warning: cannot open game", sgf_src, ", reason:", e)
+            logging.warning("Warning: cannot open game", sgf_src, ", reason:", e)
             return ([], None)
 
         try:
             board, plays = sgf_moves.get_setup_and_moves(sgf_game)
         except Exception as e:
-            print("Warning: cannot setup game", sgf_game, ", reason:", e)
+            logging.warning("Warning: cannot setup game", sgf_game, ", reason:", e)
             return ([], None)
 
         patterns_found = []
@@ -107,10 +114,13 @@ class PatternIndex(object):
         num_found = 0
         date = None
         try:
-            date = get_game_date_from_sgf(sgf_game, pathname)
-        except:
-            # TODO - log this, or add some counter
+            date = get_game_date_from_sgf(sgf_game, game_id)
+        except (Exception, e):
+            logging.warning("Could not find date in game id: %s sgf: %s. Reason: %s",
+                            game_id, sgf_game, e)
             pass
+        if fail_if_no_date and date is None:
+            return ([], None)
         for colour, move in plays:
             if self.max_moves_ is not None and num_moves > self.max_moves_:
                 break
@@ -126,7 +136,7 @@ class PatternIndex(object):
                                                                        row, col):
                     patterns_found.append(pattern)
             except ValueError as e:
-                print("Error processing game", game_id, "sgf:", sgf_src,
+                logging.warning("Error processing game", game_id, "sgf:", sgf_src,
                       "at move:", num_moves, ":", e)
                 break
         return (patterns_found, date)
