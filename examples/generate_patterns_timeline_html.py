@@ -43,15 +43,11 @@ if __name__ == '__main__':
         xticks = 'epochs'
     logging.info("xticks: %s", xticks)
 
-    NUM_PATTERNS = 1000
-    
-    MIN_STONES = None
-    MAX_STONES = None
-    if len(sys.argv) == 11:
-        MIN_STONES = int(sys.argv[8])
-        MAX_STONES = int(sys.argv[9])
-        NUM_PATTERNS = int(sys.argv[10])
-        
+    MIN_STONES = int(sys.argv[8])
+    MAX_STONES = int(sys.argv[9])
+    NUM_GLOBAL_PATTERNS_DISPLAY = int(sys.argv[10])
+    NUM_PATTERNS_PER_VERSION_DISPLAY = int(sys.argv[11])
+
     start = time.time()
     (collection_df, versions, pattern_count_by_version,
      pattern_frequency_in_epochs) = index_patterns(
@@ -73,11 +69,11 @@ if __name__ == '__main__':
             pattern_count_by_version, 
             pattern_frequency_in_epochs,
             output_dir,
-            display_global=True,
+            display_global=False, # TODO True
             display_by_version=True,
-            max_display_patterns_global=NUM_PATTERNS,
-            max_display_patterns_per_version=10,
-            unique_patterns=True,
+            max_display_patterns_global=NUM_GLOBAL_PATTERNS_DISPLAY,
+            max_display_patterns_per_version=NUM_PATTERNS_PER_VERSION_DISPLAY,
+            unique_patterns=False, # TODO True
             min_num_stones=MIN_STONES,
             max_num_stones=MAX_STONES,
             min_delta_colors=MIN_DELTA_COLORS,

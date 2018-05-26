@@ -40,9 +40,9 @@ def main(argv):
     # Skipping the first skip_num_games games
     skip_num_games = 0
 
-    max_num_versions = 1000
+    max_num_versions = 100000 # TODO 1000?
     max_games_per_version = 1000
-    min_games_per_version = 200
+    min_games_per_version = 1 # TODO 200
 
     try:
         pathname = argv[1]
@@ -91,13 +91,26 @@ def main(argv):
     # by more characters, more lines.
     current_game = ""
     patterns_in_version = {}
-    # Training versions, in the order in chronological order
-    versions = []
+    # Training versions, in chronological order
 
+    versions = []
+    frozen_versions = None
+    try:
+        tables = pd.read_html(r'http://zero.sjeng.org/')
+        versions = list(tables[0][2].iloc[2:].values)
+        versions.reverse()
+        frozen_versions = frozenset(versions)
+        print("Read versions from LeelaZero webpage: ", versions)
+    except:
+        print("WARNING: could not read versions from LeelaZero webpage")
+        pass
+
+    num_games_with_version = {}
     pattern_count_by_version = {}
     pattern_frequency_in_epochs = {}
 
     stop = False
+    only_counting = False 
     for line in open(pathname):
         if stop: break
         if line.startswith(SGF_START):
@@ -115,13 +128,19 @@ def main(argv):
                     print(current_game)
                     sys.exit(1)
                 if num_games >= skip_num_games:
-                    versions_in_game = get_versions_from_line(current_game)
+                    versions_in_game = set(get_versions_from_line(current_game))
 
                     sgf_bytes = current_game.encode('utf-8')
                     assert len(versions_in_game) <= 2
                     # Reset, start a new game record
                     current_game = ""
                     for version in versions_in_game:
+                        if frozen_versions is not None and version not in frozen_versions:
+                            print("Skipping non-official version", version)
+                            continue
+                        if version not in num_games_with_version:
+                            num_games_with_version[version] = 0
+                        num_games_with_version[version] += 1
                         version = version[:8]
                         if version not in patterns_in_version:
                             print("New version:", version)
@@ -134,9 +153,12 @@ def main(argv):
                                 print("Reached max_num_versions",
                                       len(patterns_in_version))
                                 break
-                            versions.append(version)
+                            if frozen_versions is None:
+                                versions.append(version)
                             patterns_in_version[version] = VersionPatternInfo(
                                 0, 0)
+                        if only_counting:
+                            continue
                         if patterns_in_version[version].num_games < max_games_per_version:
                             (patterns_found, _) = index.find_patterns_in_game_str(
                                 sgf_bytes, str(num_games))
@@ -151,8 +173,6 @@ def main(argv):
                                         pattern_count_by_version[version][pattern] = 0
                                 pattern_count_by_version[version][pattern] += 1
 
-                                # versions_col.append(version)
-                                #p atterns_col.append(np_pattern_to_string(pattern))
                                 ver_pat_info = patterns_in_version[version]
                                 patterns_in_version[version] = VersionPatternInfo(
                                     ver_pat_info.num_games, ver_pat_info.num_patterns + 1)
@@ -161,6 +181,16 @@ def main(argv):
                                 ver_pat_info.num_games + 1, ver_pat_info.num_patterns)
         current_game += line
 
+    print("number of games in versions:")
+    for v in versions:
+        if v in num_games_with_version:
+            print (v, num_games_with_version[v])
+    print("num versions: ", len(versions))
+    sorted_by_num_games = enumerate(sorted(num_games_with_version.items(), key=lambda x: x[1], reverse=True))
+    print(list(sorted_by_num_games))
+    if only_counting:
+        return
+        
     # pattern_frequency_in_epochs[pattern][version] = (count, frequency)
     # (of pattern in epoch)
     pattern_frequency_in_epochs = {}
@@ -189,6 +219,9 @@ def main(argv):
     versions_col = []
     run_name = output_dir
     for v in versions:
+        if v not in pattern_count_by_version:
+            print("WARN: skipping", v)
+            continue
         for p, c in pattern_count_by_version[v].items():
             # TODO optimize by adding count column, DUH...
             for i in range(c):
@@ -201,9 +234,6 @@ def main(argv):
               index = False)
 
     # TODO refactor so we do the rest optionally
-    
-    assert set(versions) == set(patterns_in_version.keys())
-    assert set(versions) == set(pattern_count_by_version.keys())
     
     # Drop versions that are two sparse
     dropped_versions = set()

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from gopatterns.common import *
 
 def custom_figsize():
-    plt.figure(figsize=(10,3))
+    plt.figure(figsize=(7,3))
 
 
 def custom_plot(xticks, versions, pattern_timeline):
@@ -209,6 +209,10 @@ def html_timeline_top_patterns_from_version(f,
     
     logging.info("Processing top patterns from %s min_num_stones %s",
                  version, min_num_stones)
+
+    if avoid_patterns is None:
+        avoid_patterns = set()
+
     patterns_in_epoch = sorted([x for x in epoch_to_patterns[version].items()
                                 if x[0] not in avoid_patterns],
                                key=lambda x: x[1], reverse=True)
@@ -231,18 +235,19 @@ def html_timeline_top_patterns_from_version(f,
             if epoch_to_patterns[ep][pattern] < 2:
                 continue
         
-        display_patterns.append(pattern)
+        display_patterns.append((pattern, count))
         if len(display_patterns) >= max_display_patterns:
             break
 
     if display_patterns:
         f.write("<h1>Version %s</h1>\n" % version)
 
-    for pattern in display_patterns:
+    for i, (pattern, count) in enumerate(display_patterns):
         pattern_timeline = build_pattern_timeline(
             pattern,
             pattern_frequency_in_epochs[pattern],
             versions)
+        f.write("<p>id:%s count:%s" % (i+1, count))
         f.write(pattern_as_html(pattern))
         f.write("\n")
         custom_plot(xticks, versions, pattern_timeline)
