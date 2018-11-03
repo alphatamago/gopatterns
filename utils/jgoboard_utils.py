@@ -13,8 +13,8 @@ def custom_figsize():
 def custom_plot(xticks, versions, pattern_timeline):
     custom_figsize()
     if xticks=='epochs':
-        plt.plot(versions, pattern_timeline)
-        plt.xticks(range(len(versions)), versions, rotation='vertical')
+        plt.plot(pattern_timeline)
+        plt.xticks(range(len(versions)), versions, rotation=90)
     else:
         plt.plot(pattern_timeline)
         plt.tick_params(

@@ -211,14 +211,19 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False,
                    min_epoch=None,
                    max_epoch=None,
                    min_num_stones=None, max_num_stones=None,
-                   min_delta_colors=None, max_delta_colors=None):
+                   min_delta_colors=None, max_delta_colors=None,
+                   drop_low_freq=None):
     # We are reading here a dataset in CSV format, with columns 'pattern' and
     # <timeline_columns>
     # This can be produced for instance like this:
     # find_patterns_in_collection.py <PATH_TO_DIRECOTRY_WITH_SGF_FILES> 9 9 3 10 40 True <some_name>
     collection_df = pd.read_csv(csv_pathname) # , nrows=100000)
     # limit is for testing
-    
+
+    if drop_low_freq is not None:
+        assert drop_low_freq > 0 and drop_low_freq < 1
+        logging.info("Dropping epoch with data less than %s of mean" % drop_low_freq)
+
     if order_by_timeline:
         logging.info("Sorting by timeline column %s", timeline_column)
         collection_df = collection_df.sort_values(by=timeline_column)
@@ -246,13 +251,13 @@ def index_patterns(csv_pathname, timeline_column, order_by_timeline=False,
     val_cnt = collection_df[timeline_column].value_counts()
     mean_count = val_cnt.describe()['50%']
     logging.info("Mean num patterns per epoch: %s", mean_count)
-    low_freq_epochs = [v for v in val_cnt.index if val_cnt[v]<(.1 * mean_count)]
-    logging.info("Dropping epochs with low data: %s",
-                 [(v, val_cnt[v]) for v in val_cnt.index
-                  if val_cnt[v]<=.01 * mean_count])
-    collection_df = collection_df.drop(
-        collection_df[collection_df[timeline_column].
-                      isin(low_freq_epochs)].index)
+    if drop_low_freq is not None:
+        low_freq_epochs = [v for v in val_cnt.index if val_cnt[v]<(drop_low_freq * mean_count)]
+        logging.info("Dropping epochs with low data: %s",
+                     [(v, val_cnt[v]) for v in low_freq_epochs])
+        collection_df = collection_df.drop(
+            collection_df[collection_df[timeline_column].
+                          isin(low_freq_epochs)].index)
     versions = collection_df[timeline_column].unique()
 
     # pattern_count_by_version[version][pattern] = count (of pattern in version)

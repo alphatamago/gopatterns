@@ -1,0 +1,62 @@
+PB_PAT = re.compile('PB\[([^]]*)\]')
+PW_PAT = re.compile('PW\[([^]]*)\]')
+
+def get_version_from_player(value):
+    tokens = value.split(' ')
+    if ((len(tokens) == 4 and tokens[0].lower() == 'leela') or
+        (len(tokens) == 3 and tokens[1].find('.') > -1)):
+        return tokens[-1]
+    return None
+
+
+def get_versions_from_line(line, debug_info=None):
+    versions = set()
+    for pat in [PB_PAT, PW_PAT]:
+        value = pat.search(line)
+        if value is not None:
+            value = value.group(1)
+            version = get_version_from_player(value)
+            if version:
+                version.add(version)
+            else:
+                if debug_info is not None:
+                    debug_info.add(value)
+    return list(versions)
+
+
+def get_version_from_sgf(sgf_bytes, debug_info=None):
+    """
+    Earlier versions:
+(;GM[1]FF[4]RU[Chinese]DT[2017-11-10]SZ[19]KM[7.5]PB[Leela Zero 0.3]PW[Human]RE[B+166.5]
+
+;B[pg];W[ok];B[bb];W[qj];B[ms];W[fq];B[as];W[pm];B[hr];W[gb]
+
+(;GM[1]FF[4]RU[Chinese]DT[2017-11-15]SZ[19]KM[7.5]PB[Leela Zero 0.4 d645af975ed5b9d08530d092d484482d9aee014f9498c7afcde8570743f85751]PW[Human]RE[B+261.5]
+
+(;GM[1]FF[4]RU[Chinese]DT[2017-12-21]SZ[19]KM[7.5]PB[Leela Zero 0.9 ../leela]PW[Human]RE[W+7.5]
+
+;B[lf];W[dr];B[fq];W[qq];B[ok];W[db];B[cp];W[sp];B[gn];W[gf]
+;B[ik];W[gb];B[fe];W[pb];B[jc];W[mq];B[bs];W[nd];B[jm];W[rf]
+;B[jq];W[lp];B[lk];W[di];B[fh];W[kc];B[hc];W[ri];B[pe];W[pm]
+;B[ph];W[gj];B[dh];W[pf];B[dg];W[pi];B[oi];W[dl];B[ei];W[qh]
+;B[of];W[oe])
+
+
+    Later versions:
+(;GM[1]FF[4]RU[Chinese]DT[2018-02-23]SZ[19]KM[7.5]PB[Leela Zero 0.12 af9ce63c]PW[Leela Zero 0.12 af9ce63c]RE[B+Resign]
+C[Leela Zero options: -p 1600 -r 1 -m 30 -t 1 -d -n --noponder -s 15330720806755350187 -g -q -w af9ce63c14d564dc43acc4affc3f8b86d25c29ffb1d10913f2a1ef563ed51804]
+
+;B[dp];W[pp];B[pc];W[cq];B[qq];W[pq];B[qp];W[qo];B[ro];W[rn]
+
+    """
+    sgf_game = sgf.Sgf_game.from_bytes(sgf_bytes)
+    root = sgf_game.get_root()
+    for key in ['PB', 'PW']:
+        value = root.get_raw(key).decode(root.get_encoding())
+        version = get_version_from_player(value)
+        if version:
+            return version
+        else:
+            if debug_info is not None:
+                debug_info.add(value)
+    return None

@@ -134,6 +134,7 @@ class PatternIndex(object):
                                                                        num_moves,
                                                                        board,
                                                                        row, col):
+                    # TODO also add info about who played last move to create this pattern, B or W (colour)
                     patterns_found.append(pattern)
             except ValueError as e:
                 logging.warning("Error processing game", game_id, "sgf:", sgf_src,
@@ -230,10 +231,8 @@ class PatternIndex(object):
                                            board, row, col):
         """
         Private method.
-        Given a board (numpy array) and a pattern size pat_dim, extract the
-        pattern assumming that (row, col) board coordinates are in (x, y) pattern
-        coordinates.
-        If the pattern won't fully fit on the board this way, move on.
+        Given a board (numpy array), coordinates (row, col) of the last placed stone (that is on the board
+        already), extract all board patterns that include the (row, col) stone.
 
         return: yields each pattern found as a numpy array
         """

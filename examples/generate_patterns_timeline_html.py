@@ -64,13 +64,14 @@ if __name__ == '__main__':
     suffix = "minepochs.%s_mindelta.%s_maxdelta.%s" % (MIN_EPOCHS_WITH_PATTERN,
                                                        MIN_DELTA_COLORS,
                                                        MAX_DELTA_COLORS)
+
     generate_patterns_frequency_html(
             versions,
             pattern_count_by_version, 
             pattern_frequency_in_epochs,
             output_dir,
-            display_global=False, # TODO True
-            display_by_version=True,
+            display_global=(NUM_GLOBAL_PATTERNS_DISPLAY > 0),
+            display_by_version=(NUM_PATTERNS_PER_VERSION_DISPLAY > 0),
             max_display_patterns_global=NUM_GLOBAL_PATTERNS_DISPLAY,
             max_display_patterns_per_version=NUM_PATTERNS_PER_VERSION_DISPLAY,
             unique_patterns=False, # TODO True

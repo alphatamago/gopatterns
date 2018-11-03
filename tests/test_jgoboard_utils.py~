@@ -1,0 +1,251 @@
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+ """ 
+= w .  
+= . . 
+= = = 
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'B', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+""" 
+=. . . . . . . 
+=. . . . . b . 
+=. . . . w b w 
+=. . . w b w . 
+=. . . b b w .  
+=. . . . . . . 
+= = = = = = = =
+"""
+)
+assert (left_col, upper_row, right_col, lower_row) == ('A', 6, 'G', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+=. . . . . . . . . 
+=. . . . . . . . . 
+=. . . . . . . . . 
+=. . . . . . . . . 
+=. . . . . b . . . 
+=. . . . w b w . . 
+=. . . w b w . . . 
+=. . . b b w . . . 
+=. . . . . . . . . 
+= = = = = = = = = =
+"""
+)
+assert (left_col, upper_row, right_col, lower_row) == ('A', 9, 'J', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+. . =
+b . =
+= = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('S', 2, 'T', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . b . . . =
+. . . . w b w . . =
+. . . w b w . . . =
+. . . b b w . . . =
+. . . . . . . . . =
+= = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('L', 9, 'T', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+ """
+= = =
+. w =
+b . =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('S', 19, 'T', 18)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . b . . . =
+. . . . w b w . . =
+. . . w b w . . . =
+. . . b b w . . . =
+. . . . . . . . . =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('L', 19, 'T', 11)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = =
+= b . 
+= . . 
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'B', 18)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = =
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . b . . . 
+= . . . . w b w . . 
+= . . . w b w . . . 
+= . . . b b w . . . 
+= . . . . . . . . . 
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'J', 11)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = =
+= . . = 
+= . . =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'B', 18)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = = = = = = = = = = = = =
+= . . . . . . . . . . . . . . . . . b . = 
+= . . . . . . . . . . . . . . . . . w . =""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'T', 18)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= . . = 
+= . . =
+= = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'B', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= . . . . . . . . . . . . . . . . . b . = 
+= . . . . . . . . . . . . . . . . . w . =
+= = = = = = = = = = = = = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'T', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = =
+= . .
+= . .
+= = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'B', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = =
+= . . . . . . . . .
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . b . . . 
+= . . . . w b w . . 
+= . . . w b w . . . 
+= . . . b b w . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . . . . . 
+= . . . . . b . . . 
+= . . . . w b w . . 
+= . . . w b w . . . 
+= . . . b b w . . . 
+= . . . . . . . . . 
+= = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'J', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = =
+. . = 
+. . =
+= = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('S', 2, 'T', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = =
+. . . . . . . . . =
+. . . . . . . . . = 
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . b . . . =
+. . . . w b w . . =
+. . . w b w . . . =
+. . . b b w . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . . . . . =
+. . . . . b . . . =
+. . . . w b w . . =
+. . . w b w . . . =
+. . . b b w . . . =
+. . . . . . . . . =
+= = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('L', 19, 'T', 1)
+
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = =
+= . . = 
+= . . =
+= = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'B', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = = = = = =
+= . . . . . . . . . . . . = 
+= . . . . . . . . . . . . =
+= = = = = = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 2, 'M', 1)
+
+_, _, _, left_col, upper_row, right_col, lower_row = process_pattern_for_jgoboard(
+"""
+= = = = = = = = = = =
+= . . . . . . . . . =
+= . . . . . . . . . = 
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . b . . . =
+= . . . . w b w . . =
+= . . . w b w . . . =
+= . . . b b w . . . =
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . . . . . =
+= . . . . . b . . . =
+= . . . . w b w . . =
+= . . . w b w . . . =
+= . . . b b w . . . =
+= . . . . . . . . . =
+= = = = = = = = = = =
+""")
+assert (left_col, upper_row, right_col, lower_row) == ('A', 19, 'J', 1)
